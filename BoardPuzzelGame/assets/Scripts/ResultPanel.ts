@@ -8,7 +8,6 @@ export function createResultPanel(
   cellSize: number,
   levelGrid: LevelGrid
 ) {
-  console.log(typeof levelGrid);
   const { cols, rows } = levelGrid;
   const ui =
     resultNode.getComponent(UITransform) ||

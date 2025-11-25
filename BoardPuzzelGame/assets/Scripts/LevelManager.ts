@@ -1,5 +1,6 @@
 import { _decorator, Component, instantiate, Node, Prefab } from "cc";
 import { LevelButton } from "./LevelButton";
+import { LevelStoreInstance } from "./LevelStore";
 const { ccclass, property } = _decorator;
 
 @ccclass("LevelManager")
@@ -9,9 +10,10 @@ export class LevelManager extends Component {
   @property(Node)
   levelList: Node | null = null;
 
-  totalLevel: number = 10;
+  totalLevel: number | null = null;
 
   start() {
+    this.totalLevel = LevelStoreInstance.getLevelListLength();
     this.createLevelBtns();
   }
 

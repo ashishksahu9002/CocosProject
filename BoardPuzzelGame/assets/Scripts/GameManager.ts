@@ -1,6 +1,8 @@
 import {
   _decorator,
+  Button,
   Component,
+  director,
   EventTouch,
   Node,
   UITransform,
@@ -18,75 +20,9 @@ import {
   pieceFitsInGrid,
   wouldOverlap,
 } from "./UtilityFunctions";
+import { LevelStoreInstance } from "./LevelStore";
 
 const CELL_SIZE = 50;
-
-const LEVEL_DATA = {
-  grid: {
-    cols: 5,
-    rows: 5,
-  },
-
-  pieces: [
-    {
-      // Piece 1
-      color: "#ff0000",
-      cells: [
-        [3, 0] as [number, number],
-        [4, 0] as [number, number],
-        [4, 1] as [number, number],
-        [4, 2] as [number, number],
-      ],
-      startPos: [50, 50] as [number, number],
-      origin: null,
-    },
-    {
-      // Piece 2
-      color: "#00ff00",
-      cells: [
-        [1, 2] as [number, number],
-        [2, 2] as [number, number],
-        [2, 3] as [number, number],
-        [3, 2] as [number, number],
-        [3, 3] as [number, number],
-        [4, 3] as [number, number],
-        [4, 4] as [number, number],
-      ],
-      startPos: [250, 50] as [number, number],
-      origin: null,
-    },
-    {
-      // Piece 3
-      color: "#0000ff",
-      cells: [
-        [0, 2] as [number, number],
-        [0, 3] as [number, number],
-        [0, 4] as [number, number],
-        [1, 3] as [number, number],
-        [1, 4] as [number, number],
-        [2, 4] as [number, number],
-        [3, 4] as [number, number],
-      ],
-      startPos: [500, 50] as [number, number],
-      origin: null,
-    },
-    {
-      // Piece 4
-      color: "#000000",
-      cells: [
-        [0, 0] as [number, number],
-        [0, 1] as [number, number],
-        [1, 0] as [number, number],
-        [1, 1] as [number, number],
-        [2, 0] as [number, number],
-        [2, 1] as [number, number],
-        [3, 1] as [number, number],
-      ],
-      startPos: [750, 50] as [number, number],
-      origin: null,
-    },
-  ],
-};
 
 @ccclass("GameManager")
 export class GameManager extends Component {
@@ -96,9 +32,19 @@ export class GameManager extends Component {
   @property(Node)
   parentNode: Node | null = null;
 
-  levels: LevelData[] = [];
-  currentLevelIndex = 0;
+  @property(Node)
+  popUpRoot: Node | null = null;
+
+  @property(Button)
+  nextLevelBtn: Button | null = null;
+  @property(Button)
+  levelSelectorBtn: Button | null = null;
+  @property(Button)
+  backBtn: Button | null = null;
+
+  currentLevelIndex: Number = 0;
   currentLevel: LevelData | null = null;
+  levelListLength: Number = 0;
 
   pieceRuntime: PieceRuntime[] = [];
 
@@ -113,6 +59,27 @@ export class GameManager extends Component {
   }
 
   start() {
+    this.popUpRoot.active = false;
+    if (this.nextLevelBtn) {
+      this.nextLevelBtn.node.on(
+        Button.EventType.CLICK,
+        this.nextLevelBtnClicked,
+        this
+      );
+    }
+    if (this.backBtn) {
+      this.backBtn.node.on(Button.EventType.CLICK, () =>
+        director.loadScene("LevelSelectScene")
+      );
+    }
+    if (this.levelSelectorBtn) {
+      this.levelSelectorBtn.node.on(Button.EventType.CLICK, () =>
+        director.loadScene("LevelSelectScene")
+      );
+    }
+    this.currentLevelIndex = LevelStoreInstance.getCurrentLevelIndex();
+    this.currentLevel = LevelStoreInstance.getCurrentLevel() as LevelData;
+    this.levelListLength = LevelStoreInstance.getLevelListLength();
     this.createPuzzle();
   }
 
@@ -123,12 +90,10 @@ export class GameManager extends Component {
       console.log("Canvas not assigned");
       return;
     }
-    createResultPanel(this.resultNode, CELL_SIZE, LEVEL_DATA.grid);
-
-    this.currentLevel = LEVEL_DATA;
+    createResultPanel(this.resultNode, CELL_SIZE, this.currentLevel.grid);
 
     this.pieceRuntime = createAllPieces({
-      level: LEVEL_DATA,
+      level: this.currentLevel,
       parent: this.parentNode,
       cellSize: CELL_SIZE,
       makeDraggable: (node, data) => this.makeDraggable(node, data),
@@ -193,10 +158,6 @@ export class GameManager extends Component {
 
     const worldPos = node.worldPosition;
     const localPos = { x: worldPos.x, y: worldPos.y };
-    console.log("nodeUI : ", nodeUI);
-    console.log("worldPos 1 : ", worldPos);
-
-    console.log(size.width, size.height);
 
     const minX = 0;
     const minY = 0;
@@ -207,8 +168,6 @@ export class GameManager extends Component {
     if (worldPos.x > maxX) localPos.x = maxX;
     if (worldPos.y < minY) localPos.y = minY;
     if (worldPos.y > maxY) localPos.y = maxY;
-
-    console.log("localPos : ", localPos);
 
     node.setWorldPosition(localPos.x, localPos.y, 0);
   }
@@ -246,6 +205,18 @@ export class GameManager extends Component {
     if (isPuzzleComplete(this.allPiecesData, this.currentLevel)) {
       console.log("PUZZLE COMPLETE ✅");
       // Popup
+      this.popUpRoot.active = true;
+      if (Number(this.currentLevelIndex) === Number(this.levelListLength) - 1) {
+        this.nextLevelBtn.node.active = false;
+      }
     }
+  }
+
+  nextLevelBtnClicked() {
+    const maxIndex = Number(this.levelListLength) - 1;
+    const next = Number(this.currentLevelIndex) + 1;
+    const toIndex = Math.min(maxIndex, next);
+    LevelStoreInstance.setCurrentLevel(toIndex);
+    director.loadScene("GameScene");
   }
 }

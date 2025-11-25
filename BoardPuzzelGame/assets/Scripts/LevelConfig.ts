@@ -1,5 +1,3 @@
-// level-config.ts
-
 export type GridCell = [number, number];
 
 export interface PieceData {

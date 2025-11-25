@@ -1,4 +1,5 @@
-import { _decorator, Button, Component, Label, Node } from "cc";
+import { _decorator, Button, Component, director, Label, Node } from "cc";
+import { LevelStoreInstance } from "./LevelStore";
 const { ccclass, property } = _decorator;
 
 @ccclass("LevelButton")
@@ -8,9 +9,9 @@ export class LevelButton extends Component {
 
   levelIndex: number;
   start() {
-    const btn = this.getComponent(Button)
-    if(btn) {
-      btn.node.on(Button.EventType.CLICK, this.onClick, this)
+    const btn = this.getComponent(Button);
+    if (btn) {
+      btn.node.on(Button.EventType.CLICK, this.onClick, this);
     }
   }
 
@@ -24,6 +25,7 @@ export class LevelButton extends Component {
   update(deltaTime: number) {}
 
   onClick() {
-    console.log(this.levelIndex)
+    LevelStoreInstance.setCurrentLevel(this.levelIndex);
+    director.loadScene("GameScene");
   }
 }

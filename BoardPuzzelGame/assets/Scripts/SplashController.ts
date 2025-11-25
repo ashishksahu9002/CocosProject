@@ -1,4 +1,17 @@
-import { _decorator, Component, Label, Node, tween, input, Input } from "cc";
+import {
+  _decorator,
+  Component,
+  Label,
+  Node,
+  tween,
+  input,
+  Input,
+  UIOpacity,
+  Vec3,
+  v3,
+  Tween,
+  director,
+} from "cc";
 const { ccclass, property } = _decorator;
 
 @ccclass("SplashController")
@@ -28,7 +41,20 @@ export class SplashController extends Component {
   update(deltaTime: number) {}
 
   onTap() {
-    console.log("Move to new scene");
+    if (!this.loadingDone) return;
+    const node = this.continueText.node;
+    Tween.stopAllByTarget(node);
+    const opacity = node.getComponent(UIOpacity);
+
+    tween(node)
+      .parallel(
+        tween().to(0.25, { scale: v3(0.8, 0.8, 0.8) }, { easing: "quadIn" }),
+        tween(opacity).to(0.25, { opacity: 0 }, { easing: "quadIn" })
+      )
+      .call(() => {
+        director.loadScene("LevelSelectScene");
+      })
+      .start();
   }
 
   onDestroy() {
@@ -54,8 +80,31 @@ export class SplashController extends Component {
 
   onLoadComplete() {
     this.loadingText.string = "Assets Loaded";
-    this.continueText.node.active = true;
     this.loadingSection.active = false;
     this.loadingDone = true;
+    this.animateContinueText();
+  }
+
+  animateContinueText() {
+    if (!this.continueText) return;
+    const node = this.continueText.node;
+
+    node.active = true;
+    node.setScale(0.5, 0.5, 0.5);
+
+    let opacity = node.getComponent(UIOpacity) as UIOpacity | null;
+    if (!opacity) opacity = node.addComponent(UIOpacity);
+    opacity.opacity = 0;
+    Tween.stopAllByTarget(node);
+    Tween.stopAllByTarget(opacity);
+
+    const pop = tween().to(1, { scale: v3(1, 1, 1) }, { easing: "backOut" });
+    const pulse = tween()
+      .to(1, { scale: v3(1.2, 1.2, 1.2) }, { easing: "sineInOut" })
+      .to(1, { scale: v3(1.0, 1.0, 1.0) }, { easing: "sineInOut" });
+
+    tween(node).then(pop).then(pulse).repeatForever().start();
+
+    tween(opacity).to(0.5, { opacity: 255 }).start();
   }
 }
